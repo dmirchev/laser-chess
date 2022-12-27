@@ -10,5 +10,7 @@ namespace LaserChess
         {
             return GameStateType.Gameplay;
         }
+
+        // [Header("Gameplay")]
     }
 }

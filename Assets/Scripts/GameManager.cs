@@ -6,22 +6,22 @@ namespace LaserChess
 {
     public class GameManager : MonoBehaviour
     {
+        [SerializeField] private string initialSceneName;
         [SerializeField] private GameStateType initialGameStateType;
 
         [SerializeField] private SceneManagerService sceneManagerService;
-        [SerializeField] private GameObject eventSystemGameObject;
+
+        private int levelIndex;
+        public int LevelIndex { get; set; }
 
         void Awake()
         {
-            DontDestroyOnLoad(this);
-            DontDestroyOnLoad(eventSystemGameObject);
-
             LoadNextGameState(initialGameStateType);
         }
 
         public void LoadNextGameState(GameStateType gameStateType)
         {
-            sceneManagerService.LoadNewSceneState(gameStateType.ToString());
+            sceneManagerService.LoadNewSceneState(initialSceneName, gameStateType.ToString());
         }
     }
 }

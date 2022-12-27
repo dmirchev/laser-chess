@@ -45,6 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d61fdba8ba597f2489f2e0fba18829e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  initialSceneName: Main
   initialGameStateType: 0
   sceneManagerService: {fileID: 8319596131243854669}
 --- !u!1 &8282289352092097330

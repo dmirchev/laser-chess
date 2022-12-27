@@ -6,6 +6,6 @@ namespace LaserChess
 {
     public class EndGameStateUI : GameStateUI<EndGameState>
     {
-        
+        // [Header("End")]
     }
 }

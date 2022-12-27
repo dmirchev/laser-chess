@@ -6,7 +6,8 @@ namespace LaserChess
 {
     public abstract class GameState<T> : MonoBehaviour where T : class
     {
-        private GameManager gameManager;
+        [Header("Game State")]
+        protected GameManager gameManager;
 
         public abstract GameStateType GetGameStateType();
 

@@ -6,6 +6,6 @@ namespace LaserChess
 {
     public class BootstrapGameStateUI : GameStateUI<BootstrapGameState>
     {
-        
+        // [Header("Bootstrap")]
     }
 }

@@ -7,6 +7,7 @@ namespace LaserChess
 {
     public class MenuGameStateUI : GameStateUI<MenuGameState>
     {
+        [Header("Menu")]
         [SerializeField] private Button startuButton;
         
         protected override void OnAwake()

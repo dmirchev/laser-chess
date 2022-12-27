@@ -6,6 +6,6 @@ namespace LaserChess
 {
     public class GameplayGameStateUI : GameStateUI<GameplayGameState>
     {
-        
+        // [Header("Gameplay")]
     }
 }

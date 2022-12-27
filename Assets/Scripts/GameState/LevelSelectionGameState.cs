@@ -10,5 +10,14 @@ namespace LaserChess
         {
             return GameStateType.LevelSelection;
         }
+
+        // [Header("Level Selection")]
+
+        public void SetLevelIntex(int levelIndex)
+        {
+            gameManager.LevelIndex = levelIndex;
+
+            LoadNextState();
+        }
     }
 }

@@ -11,6 +11,8 @@ namespace LaserChess
             return GameStateType.Bootstrap;
         }
 
+        // [Header("Bootstrap")]
+
         public override void Enter()
         {
             base.Enter();
