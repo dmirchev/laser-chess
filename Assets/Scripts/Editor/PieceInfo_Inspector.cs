@@ -25,14 +25,14 @@ namespace LaserChess
             rootVisualElement.Add(new TextField() { label = "Label", bindingPath = "label" });
 
             rootVisualElement.Add(new Label() { text = "Move" });
-            DirGrid(rootVisualElement, 0, movePieceInfoVisualElements);
-            RedrawGrid(rootVisualElement, 0, movePieceInfoVisualElements, pieceInfo.movePieceGridBehaviour.directionsOrPositions);
-            SetDirectionPositionGrids(movePieceInfoVisualElements, pieceInfo.movePieceGridBehaviour.canLeap);
+            DrawControlls(rootVisualElement, 0, movePieceInfoVisualElements);
+            DrawGrid(rootVisualElement, 0, movePieceInfoVisualElements, pieceInfo.movePieceGridBehaviour.directionsOrPositions, pieceInfo.movePieceGridBehaviour.canLeap);
+            SetDirectionPositionGrids(movePieceInfoVisualElements, pieceInfo.movePieceGridBehaviour.canLeap, pieceInfo.movePieceGridBehaviour.isInfinite);
 
             rootVisualElement.Add(new Label() { text = "Attack" });
-            DirGrid(rootVisualElement, 1, attackPieceInfoVisualElements);
-            RedrawGrid(rootVisualElement, 1, attackPieceInfoVisualElements, pieceInfo.attackPieceGridBehaviour.directionsOrPositions);
-            SetDirectionPositionGrids(attackPieceInfoVisualElements, pieceInfo.attackPieceGridBehaviour.canLeap);
+            DrawControlls(rootVisualElement, 1, attackPieceInfoVisualElements);
+            DrawGrid(rootVisualElement, 1, attackPieceInfoVisualElements, pieceInfo.attackPieceGridBehaviour.directionsOrPositions, pieceInfo.attackPieceGridBehaviour.canLeap);
+            SetDirectionPositionGrids(attackPieceInfoVisualElements, pieceInfo.attackPieceGridBehaviour.canLeap, pieceInfo.attackPieceGridBehaviour.isInfinite);
 
             rootVisualElement.Add(new ObjectField() { label = "Mesh", bindingPath = "mesh", objectType = typeof(Mesh) });
 
@@ -42,62 +42,10 @@ namespace LaserChess
             return rootVisualElement;
         }
 
-        public void DirGrid(VisualElement rootVisualElement, int fieldIndex, PieceInfoVisualElements pieceInfoVisualElements)
+        public void DrawControlls(VisualElement rootVisualElement, int fieldIndex, PieceInfoVisualElements pieceInfoVisualElements)
         {
             PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(fieldIndex);
             string pieceGridBehaviourName = GetPieceGridBehaviourName(fieldIndex);
-
-            VisualElement container = new VisualElement();
-            container.style.alignItems = new StyleEnum<Align>(Align.FlexStart);
-            pieceInfoVisualElements.directionsGroupBox = new GroupBox();
-            SetMarginAndPaddingToZero(pieceInfoVisualElements.directionsGroupBox.style);
-            container.Add(pieceInfoVisualElements.directionsGroupBox);
-            int rows = 3;
-            int gridSize = 1;
-            var innerGroupBoxes = new List<GroupBox>(rows);
-            for (int i = 0; i < rows; i++)
-            {
-                var innerGroupBox = new GroupBox();
-                innerGroupBox.style.flexDirection = FlexDirection.Row;
-                innerGroupBox.style.justifyContent = new StyleEnum<Justify>(Justify.SpaceBetween);
-                SetMarginAndPaddingToZero(innerGroupBox.style);
-                innerGroupBoxes.Add(innerGroupBox);
-                pieceInfoVisualElements.directionsGroupBox.Add(innerGroupBox);
-            }
-
-            int elementsCount = rows*rows;
-
-            pieceInfoVisualElements.magnitudeIntegerFields = new List<IntegerField>(elementsCount);
-            for (int i = 0; i < elementsCount; i++)
-            {
-                int backwardsIndex = rows-(i / rows)-1;
-
-                int x = (i % rows) - gridSize;
-                int y = gridSize - backwardsIndex;
-
-                var newIntegerField = new IntegerField();
-                SetMarginAndPaddingToZero(newIntegerField.style, 2.0f);
-                newIntegerField.label = $"{x}/{y}/{i}/{fieldIndex}";
-                newIntegerField.labelElement.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
-                newIntegerField.SetEnabled(!(x == 0 && y == 0));
-                newIntegerField.RegisterValueChangedCallback(OnChangedMagnitudeEvent);
-                
-                pieceInfoVisualElements.magnitudeIntegerFields.Add(newIntegerField);
-                innerGroupBoxes[backwardsIndex].Add(newIntegerField);
-            }
-
-            int index;
-            Vector2Int direction;
-            for (int i = 0; i < pieceGridBehaviour.directionsOrPositions.Count; i++)
-            {
-                direction = pieceGridBehaviour.directionsOrPositions[i];
-                index = GetIndexFromPosition(
-                    GetRoundedDirection(direction),
-                    gridSize, rows
-                );
-
-                pieceInfoVisualElements.magnitudeIntegerFields[index].SetValueWithoutNotify(GetRoundedMagnitude(direction));
-            }
 
             pieceInfoVisualElements.canLeapToggle = new Toggle() {label = "Can Leap", bindingPath = $"{pieceGridBehaviourName}.canLeap"};
             pieceInfoVisualElements.canLeapToggle.text = fieldIndex.ToString();
@@ -114,125 +62,46 @@ namespace LaserChess
 
             pieceInfoVisualElements.label = new Label();
             rootVisualElement.Add(pieceInfoVisualElements.label);
-            rootVisualElement.Add(container);
         }
 
-        private void OnChangedMagnitudeEvent(ChangeEvent<int> evt)
-        {
-            IntegerField integerField = evt.currentTarget as IntegerField;
-
-            int index, fieldIndex;
-            Vector2Int v = GetCoordinates(integerField.label, out index, out fieldIndex);
-
-            PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(fieldIndex);
-
-            if (pieceGridBehaviour.isInfinite && evt.newValue > 1)
-            {
-                integerField.SetValueWithoutNotify(1);
-                return;
-            }
-
-            pieceGridBehaviour.directionsOrPositions.Remove(v * evt.previousValue);
-            if (evt.newValue != 0) pieceGridBehaviour.directionsOrPositions.Add(v * evt.newValue);
-        }
-
-        private void OnChangedCanLeapEvent(ChangeEvent<bool> evt)
-        {
-            Toggle toggle = evt.currentTarget as Toggle;
-
-            PieceInfoVisualElements pieceInfoVisualElements = GetPieceInfoVisualElements(int.Parse(toggle.text));
-            SetDirectionPositionGrids(pieceInfoVisualElements, evt.newValue);
-
-            PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(int.Parse(toggle.text));
-
-            pieceGridBehaviour.directionsOrPositions.Clear();
-
-            for (int i = 0; i < pieceInfoVisualElements.magnitudeIntegerFields.Count; i++)
-                pieceInfoVisualElements.magnitudeIntegerFields[i].SetValueWithoutNotify(0);
-
-            for (int i = 0; i < pieceInfoVisualElements.positionsToggles.Count; i++)
-                pieceInfoVisualElements.positionsToggles[i].SetValueWithoutNotify(false);
-        }
-
-        void SetDirectionPositionGrids(PieceInfoVisualElements pieceInfoVisualElements, bool canLeap)
+        void SetDirectionPositionGrids(PieceInfoVisualElements pieceInfoVisualElements, bool canLeap, bool isInfinite)
         {
             pieceInfoVisualElements.label.text = canLeap ? "Positions" : "Directions";
 
-            pieceInfoVisualElements.directionsGroupBox.style.display = new StyleEnum<DisplayStyle>(
-                canLeap ? DisplayStyle.None : DisplayStyle.Flex
-            );
-
-            pieceInfoVisualElements.positionsGroupBox.style.display = new StyleEnum<DisplayStyle>(
-                canLeap ? DisplayStyle.Flex : DisplayStyle.None
-            );
-
-            pieceInfoVisualElements.isInfiniteToggle.style.display = canLeap ? DisplayStyle.None : DisplayStyle.Flex;
-            pieceInfoVisualElements.positionsGridSizeIntegerField.style.display = canLeap ? DisplayStyle.Flex : DisplayStyle.None;
+            SetInfiniteToggleDisplay(pieceInfoVisualElements, !canLeap);
+            SetGridSizeIntegerFieldDisplay(pieceInfoVisualElements, !isInfinite || canLeap);
         }
 
-        private void OnChangedIsInfiniteEvent(ChangeEvent<bool> evt)
+        void SetInfiniteToggleDisplay(PieceInfoVisualElements pieceInfoVisualElements, bool showIsInfinite)
         {
-            Toggle toggle = evt.currentTarget as Toggle;
-
-            int fieldIndex = int.Parse(toggle.text);
-            PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(fieldIndex);
-            PieceInfoVisualElements pieceInfoVisualElements = GetPieceInfoVisualElements(fieldIndex);
-
-            if (evt.newValue)
-            {
-                Vector2Int v;
-                int index;
-                for (int i = 0; i < pieceGridBehaviour.directionsOrPositions.Count; i++)
-                {
-                    v = GetRoundedDirection(pieceGridBehaviour.directionsOrPositions[i]);
-                    index = GetIndexFromPosition(v, 1, 3);
-                    pieceGridBehaviour.directionsOrPositions[i] = v;
-                    pieceInfoVisualElements.magnitudeIntegerFields[index].SetValueWithoutNotify(1);
-                }
-            }
+            pieceInfoVisualElements.isInfiniteToggle.style.display = GetDisplayStyle(showIsInfinite);
         }
 
-        public void RedrawGrid(VisualElement rootVisualElement, int fieldIndex, PieceInfoVisualElements pieceInfoVisualElements, List<Vector2Int> vector2Ints)
+        void SetGridSizeIntegerFieldDisplay(PieceInfoVisualElements pieceInfoVisualElements, bool showGridSize)
         {
-            int gridSize = GetLargestMagnitude(vector2Ints);;
+            pieceInfoVisualElements.positionsGridSizeIntegerField.style.display = GetDisplayStyle(showGridSize);
+        }
+
+        DisplayStyle GetDisplayStyle(bool show)
+        {
+            return show ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        public void DrawGrid(VisualElement rootVisualElement, int fieldIndex, PieceInfoVisualElements pieceInfoVisualElements, List<Vector2Int> vector2Ints, bool canLeap)
+        {
+            int gridSize = GetLargestMagnitude(vector2Ints);
             pieceInfoVisualElements.positionsGridSizeIntegerField = new IntegerField() { value = gridSize, maxLength = 1 };
             pieceInfoVisualElements.positionsGridSizeIntegerField.label = fieldIndex.ToString();
             pieceInfoVisualElements.positionsGridSizeIntegerField.labelElement.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
             pieceInfoVisualElements.positionsGridSizeIntegerField.RegisterValueChangedCallback(OnChangedPositionsGridSizeEvent);
 
-            DrawPositionGrid(gridSize, pieceInfoVisualElements, fieldIndex, vector2Ints);
+            DrawPositionGrid(gridSize, pieceInfoVisualElements, fieldIndex, canLeap, vector2Ints);
 
-            rootVisualElement.Add(pieceInfoVisualElements.positionsGridSizeIntegerField);
             rootVisualElement.Add(pieceInfoVisualElements.positionsGroupBox);
+            rootVisualElement.Add(pieceInfoVisualElements.positionsGridSizeIntegerField);
         }
 
-        private void OnChangedPositionsGridSizeEvent(ChangeEvent<int> evt)
-        {
-            IntegerField integerField = evt.currentTarget as IntegerField;
-
-            if (evt.newValue < 1)
-            {
-                integerField.SetValueWithoutNotify(1);
-                return;
-            }
-
-            if (evt.newValue > 10)
-            {
-                integerField.SetValueWithoutNotify(9);
-                return;
-            }
-
-            int fieldIndex = int.Parse(integerField.label);
-
-            PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(fieldIndex);
-            pieceGridBehaviour.directionsOrPositions.Clear();
-
-            PieceInfoVisualElements pieceInfoVisualElements = GetPieceInfoVisualElements(fieldIndex);
-
-            DrawPositionGrid(evt.newValue, pieceInfoVisualElements, fieldIndex);
-        }
-
-        void DrawPositionGrid(int gridSize, PieceInfoVisualElements pieceInfoVisualElements, int fieldIndex, List<Vector2Int> vector2Ints = null)
+        void DrawPositionGrid(int gridSize, PieceInfoVisualElements pieceInfoVisualElements, int fieldIndex, bool canLeap, List<Vector2Int> vector2Ints = null)
         {
             bool isInitial = vector2Ints != null;
             if (isInitial) pieceInfoVisualElements.positionsGroupBox = new GroupBox();
@@ -268,21 +137,104 @@ namespace LaserChess
                 if ((x == 0 && y == 0)) // isCenter
                     newToggle.SetEnabled(false);
                 else
-                    newToggle.SetEnabled((x == 0 || y == 0) || (x == y) || (x == -y));
+                    newToggle.SetEnabled(canLeap || (x == 0 || y == 0) || (x == y) || (x == -y));
+                
                 if(isInitial)
                 {
                     vector2Int.x = x;
                     vector2Int.y = y;
                     newToggle.SetValueWithoutNotify(vector2Ints.Contains(vector2Int));
                 }
-                newToggle.RegisterValueChangedCallback(OnChangedPositionEvent);
+                newToggle.RegisterValueChangedCallback(OnChangeToggleEvent);
                 
                 pieceInfoVisualElements.positionsToggles.Add(newToggle);
                 innerGroupBoxes[backwardsIndex].Add(newToggle);
             }
+
+            if (!canLeap && isInitial)
+            {
+                for (int i = 0; i < vector2Ints.Count; i++)
+                    CheckDirectionToggles(pieceInfoVisualElements, vector2Ints[i], gridSize, rows, true);
+            }
         }
 
-        void OnChangedPositionEvent(ChangeEvent<bool> evt)
+        // On Change
+        private void OnChangedCanLeapEvent(ChangeEvent<bool> evt)
+        {
+            Toggle toggle = evt.currentTarget as Toggle;
+
+            int fieldIndex = int.Parse(toggle.text);
+            PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(fieldIndex);
+            PieceInfoVisualElements pieceInfoVisualElements = GetPieceInfoVisualElements(fieldIndex);
+
+            SetDirectionPositionGrids(pieceInfoVisualElements, evt.newValue, pieceGridBehaviour.isInfinite);
+
+            pieceGridBehaviour.directionsOrPositions.Clear();
+
+            int gridSize = pieceGridBehaviour.isInfinite && !evt.newValue ? 1 : pieceInfoVisualElements.positionsGridSizeIntegerField.value;
+            DrawPositionGrid(gridSize, pieceInfoVisualElements, fieldIndex, evt.newValue);
+
+            for (int i = 0; i < pieceInfoVisualElements.positionsToggles.Count; i++)
+                pieceInfoVisualElements.positionsToggles[i].SetValueWithoutNotify(false);
+        }
+
+        private void OnChangedIsInfiniteEvent(ChangeEvent<bool> evt)
+        {
+            Toggle toggle = evt.currentTarget as Toggle;
+
+            int fieldIndex = int.Parse(toggle.text);
+            PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(fieldIndex);
+            PieceInfoVisualElements pieceInfoVisualElements = GetPieceInfoVisualElements(fieldIndex);
+
+            SetDirectionPositionGrids(pieceInfoVisualElements, pieceGridBehaviour.canLeap, evt.newValue);
+
+            if (evt.newValue)
+            {
+                DrawPositionGrid(1, pieceInfoVisualElements, fieldIndex, pieceGridBehaviour.canLeap);
+
+                Vector2Int v;
+                int index;
+                for (int i = 0; i < pieceGridBehaviour.directionsOrPositions.Count; i++)
+                {
+                    v = GetRoundedDirection(pieceGridBehaviour.directionsOrPositions[i]);
+                    index = GetIndexFromPosition(v, 1, 3);
+                    pieceGridBehaviour.directionsOrPositions[i] = v;
+                    pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(true);
+                }
+            }
+            else
+            {
+                DrawPositionGrid(pieceInfoVisualElements.positionsGridSizeIntegerField.value, pieceInfoVisualElements, fieldIndex, pieceGridBehaviour.canLeap);
+            }
+        }
+
+        private void OnChangedPositionsGridSizeEvent(ChangeEvent<int> evt)
+        {
+            IntegerField integerField = evt.currentTarget as IntegerField;
+
+            if (evt.newValue < 1)
+            {
+                integerField.SetValueWithoutNotify(1);
+                return;
+            }
+
+            if (evt.newValue > 10)
+            {
+                integerField.SetValueWithoutNotify(9);
+                return;
+            }
+
+            int fieldIndex = int.Parse(integerField.label);
+
+            PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(fieldIndex);
+            pieceGridBehaviour.directionsOrPositions.Clear();
+
+            PieceInfoVisualElements pieceInfoVisualElements = GetPieceInfoVisualElements(fieldIndex);
+
+            DrawPositionGrid(evt.newValue, pieceInfoVisualElements, fieldIndex, pieceGridBehaviour.canLeap);
+        }
+
+        private void OnChangeToggleEvent(ChangeEvent<bool> evt)
         {
             Toggle toggle = evt.currentTarget as Toggle;
 
@@ -291,12 +243,110 @@ namespace LaserChess
 
             PieceGridBehaviour pieceGridBehaviour = GetPieceGridBehaviour(fieldIndex);
 
-            if (evt.newValue)
+            if (pieceGridBehaviour.canLeap)
+                OnChangedPositionEvent(pieceGridBehaviour, v, evt.newValue);
+            else
+                OnChangedDirectionEvent(pieceGridBehaviour, index, fieldIndex, v, evt.newValue, evt.previousValue);
+        }
+
+        void OnChangedPositionEvent(PieceGridBehaviour pieceGridBehaviour, Vector2Int v, bool newValue)
+        {
+            if (newValue)
                 pieceGridBehaviour.directionsOrPositions.Add(v);
             else
                 pieceGridBehaviour.directionsOrPositions.Remove(v);
         }
 
+        void OnChangedDirectionEvent(PieceGridBehaviour pieceGridBehaviour, int index, int fieldIndex, Vector2Int v, bool newValue, bool previousValue)
+        {
+            Vector2Int vInitial = v;
+
+            PieceInfoVisualElements pieceInfoVisualElements = GetPieceInfoVisualElements(fieldIndex);
+            int gridSize = pieceInfoVisualElements.positionsGridSizeIntegerField.value;
+
+            int rows = (gridSize*2)+1;
+
+            if (previousValue)
+            {
+                Vector2Int vDir = GetRoundedDirection(v);
+
+                Vector2Int vNext = v + vDir;
+                if (Mathf.Abs(vNext.x) <= gridSize && Mathf.Abs(vNext.y) <= gridSize)
+                {
+                    // Goint to Edge
+                    if(pieceInfoVisualElements.positionsToggles[GetIndexFromPosition(vNext, gridSize, rows)].value)
+                    {
+                        pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(previousValue);
+
+                        int safeCount = vNext.x != 0 ? Mathf.Abs(vNext.x) : Mathf.Abs(vNext.y);
+
+                        while(safeCount <= gridSize)
+                        {
+                            index = GetIndexFromPosition(vNext, gridSize, rows);
+                            pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(newValue);
+                            vNext += vDir;
+                            
+                            safeCount++;
+                        }
+
+                        AddDirectionVector2Int(pieceGridBehaviour, vInitial);
+
+                        return;
+                    }
+                }
+            }
+
+            CheckDirectionToggles(pieceInfoVisualElements, v, gridSize, rows, newValue);
+
+            AddDirectionVector2Int(pieceGridBehaviour, vInitial);
+        }
+
+        void CheckDirectionToggles(PieceInfoVisualElements pieceInfoVisualElements, Vector2Int v, int gridSize, int rows, bool newValue)
+        {
+            int safeCount = v.x != 0 ? Mathf.Abs(v.x) : Mathf.Abs(v.y);
+
+            // Going to Center
+            Vector2Int vDir = GetRoundedDirection(v);
+            Vector2Int vOppDir = -vDir;
+
+            v += vOppDir;
+            safeCount--;
+
+            int index;
+            while(safeCount > 0)
+            {
+                index = GetIndexFromPosition(v, gridSize, rows);
+                pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(newValue);
+                v += vOppDir;
+
+                safeCount--;
+            }
+        }
+
+        void AddDirectionVector2Int(PieceGridBehaviour pieceGridBehaviour, Vector2Int v)
+        {
+            Vector2Int vRoundedDirection = GetRoundedDirection(v);
+            Vector2Int roundedDirection;
+            bool areIdentical = false;
+            for (int i = 0; i < pieceGridBehaviour.directionsOrPositions.Count; i++)
+            {
+                roundedDirection = GetRoundedDirection(pieceGridBehaviour.directionsOrPositions[i]);
+
+                if (vRoundedDirection.Equals(roundedDirection))
+                {
+                    areIdentical = v.Equals(pieceGridBehaviour.directionsOrPositions[i]);
+                    pieceGridBehaviour.directionsOrPositions.RemoveAt(i);
+
+                    break;
+                }
+            }
+
+            if (areIdentical) return;
+
+            pieceGridBehaviour.directionsOrPositions.Add(v);
+        }
+
+        // Get
         PieceInfoVisualElements GetPieceInfoVisualElements(int fieldIndex)
         {
             return fieldIndex == 0 ? movePieceInfoVisualElements : attackPieceInfoVisualElements;
@@ -318,6 +368,7 @@ namespace LaserChess
             return v.x + gridSize + (v.y + gridSize) * rows;
         }
 
+        // Vector
         Vector2Int GetCoordinates(string label, out int index, out int fieldIndex)
         {
             string[] separated = label.Split('/');
@@ -361,6 +412,7 @@ namespace LaserChess
             return largestMagnitude;
         }
 
+        // Inspector
         public void SetMarginAndPaddingToZero(IStyle style, float margin = 0, float padding = 0)
         {
             StyleLength marginStyleLength = new StyleLength(margin);
@@ -376,75 +428,11 @@ namespace LaserChess
             style.paddingRight = paddingStyleLength;
             style.paddingTop = paddingStyleLength;
         }
-
-        /* private void OnBoolChangedEvent(ChangeEvent<bool> evt)
-        {
-            Toggle t = evt.currentTarget as Toggle;
-            PieceInfo pieceInfo = this.target as PieceInfo;
-
-            int index, fieldIndex;
-            Vector2Int v = GetCoordinates(t.label, out index, out fieldIndex);
-
-            PieceInfoVisualElements pieceInfoVisualElements = GetPieceInfoVisualElements(fieldIndex);
-            int gridSize = pieceInfoVisualElements.positionsGridSizeIntegerField.value;
-
-            int rows = (gridSize*2)+1;
-
-            Vector2Int vDir = GetRoundedDirection(v);
-
-            int safeCount = 0;
-
-            if (evt.previousValue)
-            {
-                Vector2Int vNext = v + vDir;
-                if (Mathf.Abs(vNext.x) <= gridSize && Mathf.Abs(vNext.y) <= gridSize)
-                {
-                    // Goint to Edge
-                    if(pieceInfoVisualElements.positionsToggles[GetIndexFromPosition(vNext, gridSize, rows)].value)
-                    {
-                        pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(evt.previousValue);
-
-                        safeCount = vNext.x != 0 ? Mathf.Abs(vNext.x) : Mathf.Abs(vNext.y);
-
-                        while(safeCount <= gridSize)
-                        {
-                            index = GetIndexFromPosition(vNext, gridSize, rows);
-                            pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(evt.newValue);
-                            vNext += vDir;
-                            
-                            safeCount++;
-                        }
-
-                        return;
-                    }
-                }
-            }
-
-            safeCount = v.x != 0 ? Mathf.Abs(v.x) : Mathf.Abs(v.y);
-
-            // Going to Center
-            Vector2Int vOppDir = -vDir;
-
-            v += vOppDir;
-            safeCount--;
-
-            while(safeCount > 0)
-            {
-                index = GetIndexFromPosition(v, gridSize, rows);
-                pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(evt.newValue);
-                v += vOppDir;
-
-                safeCount--;
-            }
-        } */
     }
 
     public class PieceInfoVisualElements
     {
         public Label label;
-
-        public GroupBox directionsGroupBox;
-        public List<IntegerField> magnitudeIntegerFields;
 
         public IntegerField positionsGridSizeIntegerField;
         public GroupBox positionsGroupBox;
