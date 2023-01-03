@@ -18,7 +18,6 @@ namespace LaserChess
         void Start() => Enter();
 
         public virtual void Enter() => gameManager = FindObjectOfType<GameManager>();
-        public virtual void Update() { return; }
         public virtual void Exit() { return; }
 
         public void LoadNextState() => gameManager.LoadNextGameState(nextGameStateType);
