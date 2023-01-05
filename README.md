@@ -3,7 +3,7 @@
 This is a 2 Player Chess-like game where you take turn and battle,
 
 ## **Requirements:** 
- - Unity Version [**2020.3**](https://unity3d.com/get-unity/download) or newer
+ - Unity Version [**2021.3.13f1**](https://unity3d.com/get-unity/download) or newer
  - Supported platforms: PC/Mac
  
  ## **Features:**
