@@ -11,6 +11,87 @@ namespace LaserChess
             return GameStateType.Gameplay;
         }
 
-        // [Header("Gameplay")]
+        [Header("Gameplay")]
+        [SerializeField] public Level level;
+
+        [Header("Gameplay State")]
+        private GameplayState currentGameplayState;
+
+        private SelectGameplayState selectGameplayState;
+        private MoveGameplayState moveGameplayState;
+        private AttackGameplayState attackGameplayState;
+
+        public static bool isPlayer;
+
+        void Awake()
+        {
+            currentGameplayState = null;
+
+            selectGameplayState = new SelectGameplayState(this);
+            moveGameplayState = new MoveGameplayState(this);
+            attackGameplayState = new AttackGameplayState(this);
+
+            isPlayer = true;
+        }
+
+        public override void Enter()
+        {
+            base.Enter();
+            
+            level.Init();
+
+            SetGameplayState(GameplayStateType.Select);
+        }
+
+        public void CheckIsPlayerFinished()
+        {
+            if (level.CheckIsPlayerFinished(out gameManager.hasPlayerWon))
+                LoadNextState();
+        }
+
+        public void SetGameplayState(GameplayStateType gameplayStateType)
+        {
+            if (gameplayStateType == GameplayStateType.None) return;
+
+            if (currentGameplayState != null)
+                currentGameplayState.Exit();
+            
+            currentGameplayState = GetGameplayState(gameplayStateType);
+            currentGameplayState.Enter();
+        }
+
+        public void GetInput(RaycastHit hit, bool isAPiece)
+        {
+            currentGameplayState.GetInput(hit, isAPiece);
+        }
+
+        public void NoInput()
+        {
+            currentGameplayState.NoInput();
+        }
+
+        public void ForceNextGameplayState()
+        {
+            currentGameplayState.NextGameplayState();
+        }
+
+        public void SetNextButtonState(bool isActive, string text)
+        {
+            gameStateUI.nextStateButton.interactable = isActive;
+            gameStateUI.nextStateButtonText.text = text;
+        }
+
+        // Get
+        private GameplayState GetGameplayState(GameplayStateType gameplayStateType)
+        {
+            switch (gameplayStateType)
+            {
+                case GameplayStateType.Select: return selectGameplayState;
+                case GameplayStateType.Move: return moveGameplayState;
+                case GameplayStateType.Attack: return attackGameplayState;
+            }
+
+            return null;
+        }
     }
 }

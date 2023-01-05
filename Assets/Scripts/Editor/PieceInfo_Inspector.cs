@@ -24,22 +24,36 @@ namespace LaserChess
 
             rootVisualElement.Add(new TextField() { label = "Label", bindingPath = "label" });
 
-            rootVisualElement.Add(new Label() { text = "Move" });
+            rootVisualElement.Add(CreateLabel("Behaviours"));
+            rootVisualElement.Add(CreateLabel("Move"));
             DrawControlls(rootVisualElement, 0, movePieceInfoVisualElements);
-            DrawGrid(rootVisualElement, 0, movePieceInfoVisualElements, pieceInfo.movePieceGridBehaviour.directionsOrPositions, pieceInfo.movePieceGridBehaviour.canLeap);
+            DrawGrid(rootVisualElement, 0, movePieceInfoVisualElements, ref pieceInfo.movePieceGridBehaviour.directionsOrPositions, pieceInfo.movePieceGridBehaviour.canLeap);
             SetDirectionPositionGrids(movePieceInfoVisualElements, pieceInfo.movePieceGridBehaviour.canLeap, pieceInfo.movePieceGridBehaviour.isInfinite);
 
-            rootVisualElement.Add(new Label() { text = "Attack" });
+            rootVisualElement.Add(CreateLabel("Attack"));
             DrawControlls(rootVisualElement, 1, attackPieceInfoVisualElements);
-            DrawGrid(rootVisualElement, 1, attackPieceInfoVisualElements, pieceInfo.attackPieceGridBehaviour.directionsOrPositions, pieceInfo.attackPieceGridBehaviour.canLeap);
+            DrawGrid(rootVisualElement, 1, attackPieceInfoVisualElements, ref pieceInfo.attackPieceGridBehaviour.directionsOrPositions, pieceInfo.attackPieceGridBehaviour.canLeap);
             SetDirectionPositionGrids(attackPieceInfoVisualElements, pieceInfo.attackPieceGridBehaviour.canLeap, pieceInfo.attackPieceGridBehaviour.isInfinite);
 
-            rootVisualElement.Add(new ObjectField() { label = "Mesh", bindingPath = "mesh", objectType = typeof(Mesh) });
+            rootVisualElement.Add(CreateLabel("Info"));
+            rootVisualElement.Add(new EnumField() { label = "Attack Type", bindingPath = "attackType" });
+            rootVisualElement.Add(new IntegerField() { label = "Attack Power", bindingPath = "attackPower" });
+            rootVisualElement.Add(new IntegerField() { label = "Hit Points", bindingPath = "hitPoints" });
+            rootVisualElement.Add(new Toggle() { label = "Player Controlled", bindingPath = "playerControlled" });
 
             // InspectorElement.FillDefaultInspector(rootVisualElement, serializedObject, this);
 
             // Return the finished inspector UI
             return rootVisualElement;
+        }
+
+        Label CreateLabel(string labelText)
+        {
+            Label label = new Label() { text = labelText };
+            label.style.marginBottom = new StyleLength(5);
+            label.style.marginTop = new StyleLength(1);
+
+            return label;
         }
 
         public void DrawControlls(VisualElement rootVisualElement, int fieldIndex, PieceInfoVisualElements pieceInfoVisualElements)
@@ -87,9 +101,9 @@ namespace LaserChess
             return show ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        public void DrawGrid(VisualElement rootVisualElement, int fieldIndex, PieceInfoVisualElements pieceInfoVisualElements, List<Vector2Int> vector2Ints, bool canLeap)
+        public void DrawGrid(VisualElement rootVisualElement, int fieldIndex, PieceInfoVisualElements pieceInfoVisualElements, ref List<Vector2Int> vector2Ints, bool canLeap)
         {
-            int gridSize = GetLargestMagnitude(vector2Ints);
+            int gridSize = GetLargestMagnitude(ref vector2Ints);
             pieceInfoVisualElements.positionsGridSizeIntegerField = new IntegerField() { value = gridSize, maxLength = 1 };
             pieceInfoVisualElements.positionsGridSizeIntegerField.label = fieldIndex.ToString();
             pieceInfoVisualElements.positionsGridSizeIntegerField.labelElement.style.display = new StyleEnum<DisplayStyle>(DisplayStyle.None);
@@ -103,8 +117,9 @@ namespace LaserChess
 
         void DrawPositionGrid(int gridSize, PieceInfoVisualElements pieceInfoVisualElements, int fieldIndex, bool canLeap, List<Vector2Int> vector2Ints = null)
         {
-            bool isInitial = vector2Ints != null;
-            if (isInitial) pieceInfoVisualElements.positionsGroupBox = new GroupBox();
+            bool isNotInitial = vector2Ints != null;
+            if (isNotInitial) pieceInfoVisualElements.positionsGroupBox = new GroupBox();
+            if (pieceInfoVisualElements.positionsGroupBox == null) pieceInfoVisualElements.positionsGroupBox = new GroupBox();
 
             pieceInfoVisualElements.positionsGroupBox.Clear();
             SetMarginAndPaddingToZero(pieceInfoVisualElements.positionsGroupBox.style);
@@ -139,7 +154,7 @@ namespace LaserChess
                 else
                     newToggle.SetEnabled(canLeap || (x == 0 || y == 0) || (x == y) || (x == -y));
                 
-                if(isInitial)
+                if(isNotInitial)
                 {
                     vector2Int.x = x;
                     vector2Int.y = y;
@@ -151,7 +166,7 @@ namespace LaserChess
                 innerGroupBoxes[backwardsIndex].Add(newToggle);
             }
 
-            if (!canLeap && isInitial)
+            if (!canLeap && isNotInitial)
             {
                 for (int i = 0; i < vector2Ints.Count; i++)
                     CheckDirectionToggles(pieceInfoVisualElements, vector2Ints[i], gridSize, rows, true);
@@ -169,13 +184,9 @@ namespace LaserChess
 
             SetDirectionPositionGrids(pieceInfoVisualElements, evt.newValue, pieceGridBehaviour.isInfinite);
 
-            pieceGridBehaviour.directionsOrPositions.Clear();
-
             int gridSize = pieceGridBehaviour.isInfinite && !evt.newValue ? 1 : pieceInfoVisualElements.positionsGridSizeIntegerField.value;
             DrawPositionGrid(gridSize, pieceInfoVisualElements, fieldIndex, evt.newValue);
-
-            for (int i = 0; i < pieceInfoVisualElements.positionsToggles.Count; i++)
-                pieceInfoVisualElements.positionsToggles[i].SetValueWithoutNotify(false);
+            SetToggles(pieceInfoVisualElements, pieceGridBehaviour, gridSize, pieceGridBehaviour.isInfinite);
         }
 
         private void OnChangedIsInfiniteEvent(ChangeEvent<bool> evt)
@@ -188,23 +199,22 @@ namespace LaserChess
 
             SetDirectionPositionGrids(pieceInfoVisualElements, pieceGridBehaviour.canLeap, evt.newValue);
 
-            if (evt.newValue)
-            {
-                DrawPositionGrid(1, pieceInfoVisualElements, fieldIndex, pieceGridBehaviour.canLeap);
+            int gridSize = evt.newValue ? 1 : pieceInfoVisualElements.positionsGridSizeIntegerField.value;
+            DrawPositionGrid(gridSize, pieceInfoVisualElements, fieldIndex, pieceGridBehaviour.canLeap);
+            SetToggles(pieceInfoVisualElements, pieceGridBehaviour, gridSize, evt.newValue);
+        }
 
-                Vector2Int v;
-                int index;
-                for (int i = 0; i < pieceGridBehaviour.directionsOrPositions.Count; i++)
-                {
-                    v = GetRoundedDirection(pieceGridBehaviour.directionsOrPositions[i]);
-                    index = GetIndexFromPosition(v, 1, 3);
-                    pieceGridBehaviour.directionsOrPositions[i] = v;
-                    pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(true);
-                }
-            }
-            else
+        void SetToggles(PieceInfoVisualElements pieceInfoVisualElements, PieceGridBehaviour pieceGridBehaviour, int gridSize, bool round)
+        {
+            Vector2Int v;
+            int index;
+            int rows = (gridSize*2)+1;
+            for (int i = 0; i < pieceGridBehaviour.directionsOrPositions.Count; i++)
             {
-                DrawPositionGrid(pieceInfoVisualElements.positionsGridSizeIntegerField.value, pieceInfoVisualElements, fieldIndex, pieceGridBehaviour.canLeap);
+                v = round ? GetRoundedDirection(pieceGridBehaviour.directionsOrPositions[i]) : pieceGridBehaviour.directionsOrPositions[i];
+                index = GetIndexFromPosition(v, gridSize, rows);
+                pieceGridBehaviour.directionsOrPositions[i] = v;
+                pieceInfoVisualElements.positionsToggles[index].SetValueWithoutNotify(true);
             }
         }
 
@@ -394,8 +404,11 @@ namespace LaserChess
             return Mathf.Abs(v.x == 0 ? v.y : v.x);
         }
 
-        int GetLargestMagnitude(List<Vector2Int> vector2Ints)
+        int GetLargestMagnitude(ref List<Vector2Int> vector2Ints)
         {
+            if (vector2Ints == null)
+                vector2Ints = new List<Vector2Int>(9);
+
             int largestMagnitude = 1;
             Vector2Int vector2Int;
             for (int i = 0; i < vector2Ints.Count; i++)

@@ -12,7 +12,10 @@ namespace LaserChess
         public PieceGridBehaviour movePieceGridBehaviour;
         public PieceGridBehaviour attackPieceGridBehaviour;
 
-        public Mesh mesh;
+        public AttackType attackType;
+        public int attackPower;
+        public int hitPoints;
+        public bool playerControlled;
     }
 
     [System.Serializable]
@@ -21,5 +24,12 @@ namespace LaserChess
         public bool canLeap;
         public bool isInfinite;
         public List<Vector2Int> directionsOrPositions;
+    }
+
+    public enum AttackType
+    {
+        None,
+        Once,
+        All
     }
 }

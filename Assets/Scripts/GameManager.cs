@@ -14,8 +14,12 @@ namespace LaserChess
         private int levelIndex;
         public int LevelIndex { get; set; }
 
+        public bool hasPlayerWon;
+
         void Awake()
         {
+            LevelDataManager.ReadData();
+
             LoadNextGameState(initialGameStateType);
         }
 

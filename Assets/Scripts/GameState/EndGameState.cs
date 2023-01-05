@@ -12,5 +12,12 @@ namespace LaserChess
         }
 
         // [Header("End")]
+
+        public override void Enter()
+        {
+            base.Enter();
+
+            gameStateUI.SetEndGameText(gameManager.hasPlayerWon);
+        }
     }
 }
