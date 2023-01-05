@@ -65,9 +65,9 @@ namespace LaserChess
             {
                 SetAttack();
                 stopInput = true;
-            }
 
-            state.SetNextButtonState(false, "Wait");
+                state.SetNextButtonState(false, "Wait");
+            }
         }
 
         private void AttackNone()

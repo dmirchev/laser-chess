@@ -37,16 +37,20 @@ namespace LaserChess
         public override void Enter()
         {
             base.Enter();
-            
+
             level.Init();
 
             SetGameplayState(GameplayStateType.Select);
+
+            gameStateUI.SetHeader(isPlayer);
         }
 
         public void CheckIsPlayerFinished()
         {
             if (level.CheckIsPlayerFinished(out gameManager.hasPlayerWon))
                 LoadNextState();
+
+            gameStateUI.SetHeader(isPlayer);
         }
 
         public void SetGameplayState(GameplayStateType gameplayStateType)
@@ -77,8 +81,7 @@ namespace LaserChess
 
         public void SetNextButtonState(bool isActive, string text)
         {
-            gameStateUI.nextStateButton.interactable = isActive;
-            gameStateUI.nextStateButtonText.text = text;
+            gameStateUI.SetNextStateButton(isActive, text);
         }
 
         // Get

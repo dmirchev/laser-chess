@@ -11,11 +11,26 @@ namespace LaserChess
         [Header("Gameplay")]
         public Button nextStateButton;
         public TMP_Text nextStateButtonText;
+        public TMP_Text headerText;
+
+        public string playerTurnText;
+        public string aiTurnText;
 
         void Awake()
         {
             nextStateButton.onClick.RemoveAllListeners();
             nextStateButton.onClick.AddListener(gameState.ForceNextGameplayState);
+        }
+
+        public void SetNextStateButton(bool isActive, string text)
+        {
+            nextStateButton.interactable = isActive;
+            nextStateButtonText.text = text;
+        }
+
+        public void SetHeader(bool isPlayer)
+        {
+            headerText.text = isPlayer ? playerTurnText : aiTurnText;
         }
     }
 }
