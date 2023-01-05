@@ -33,7 +33,9 @@ namespace LaserChess
             {
                 stopInput = true;
 
+                AttackNone();
                 NextGameplayState();
+                
                 return;
             }
             else if (state.level.SelectedPiece.pieceInfo.attackType == AttackType.All)
