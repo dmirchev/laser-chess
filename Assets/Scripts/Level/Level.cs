@@ -222,7 +222,7 @@ namespace LaserChess
         public void ShowSquaresAttack()
         {
             levelGrid.ShowSquares(
-                selectedPiece.pieceInfo.movePieceGridBehaviour, 
+                selectedPiece.pieceInfo.attackPieceGridBehaviour, 
                 selectedPiece.cellCoordinates,
                 GetLevelDirection(selectedPiece.pieceInfo.playerControlled),
                 false
