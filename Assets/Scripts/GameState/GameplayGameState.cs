@@ -38,19 +38,21 @@ namespace LaserChess
         {
             base.Enter();
 
-            level.Init();
+            int leftPlayerPiecesLeft, rightPlayerPiecesLeft;
+            level.Init(out leftPlayerPiecesLeft, out rightPlayerPiecesLeft);
 
             SetGameplayState(GameplayStateType.Select);
 
-            gameStateUI.SetHeader(isPlayer);
+            gameStateUI.SetHeader(isPlayer, leftPlayerPiecesLeft, rightPlayerPiecesLeft);
         }
 
         public void CheckIsPlayerFinished()
         {
-            if (level.CheckIsPlayerFinished(out gameManager.hasPlayerWon))
+            int leftPlayerPiecesLeft, rightPlayerPiecesLeft;
+            if (level.CheckIsPlayerFinished(out gameManager.hasPlayerWon, out leftPlayerPiecesLeft, out rightPlayerPiecesLeft))
                 LoadNextState();
 
-            gameStateUI.SetHeader(isPlayer);
+            gameStateUI.SetHeader(isPlayer, leftPlayerPiecesLeft, rightPlayerPiecesLeft);
         }
 
         public void SetGameplayState(GameplayStateType gameplayStateType)

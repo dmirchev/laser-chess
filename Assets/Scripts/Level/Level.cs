@@ -17,13 +17,16 @@ namespace LaserChess
         [SerializeField] private Piece selectedPiece;
         public Piece SelectedPiece { get { return selectedPiece; } }
 
-        public void Init()
+        public void Init(out int leftPlayerPiecesLeft, out int rightPlayerPiecesLeft)
         {
             levelGrid.CreateLevelGrid(this);
 
             LevelData levelData = LevelDataManager.GetLevelData();
 
             pieces = new Dictionary<int, Piece>();
+
+            leftPlayerPiecesLeft = 0;
+            rightPlayerPiecesLeft = 0;
 
             Piece piecePrefab;
             Piece piece;
@@ -49,30 +52,35 @@ namespace LaserChess
                     pieces.Add(index, piece);
 
                     index++;
+
+                    if (piece.pieceInfo.playerControlled)
+                        leftPlayerPiecesLeft++;
+                    else
+                        rightPlayerPiecesLeft++;
                 }
             }
 
             ClearSelectedPiece();
         }
 
-        public bool CheckIsPlayerFinished(out bool hasPlayerWon)
+        public bool CheckIsPlayerFinished(out bool hasPlayerWon, out int leftPlayerPiecesLeft, out int rightPlayerPiecesLeft)
         {
-            int playerCount = 0;
-            int aiCount = 0;
+            leftPlayerPiecesLeft = 0;
+            rightPlayerPiecesLeft = 0;
             hasPlayerWon = false;
             foreach(KeyValuePair<int, Piece> piece in pieces)
             {
                 if (piece.Value.pieceInfo.playerControlled)
-                    playerCount++;
+                    leftPlayerPiecesLeft++;
                 else
-                    aiCount++;
+                    rightPlayerPiecesLeft++;
             }
 
-            if (playerCount == 0 || aiCount == 0)
+            if (leftPlayerPiecesLeft == 0 || rightPlayerPiecesLeft == 0)
             {
                 DeleteAll();
 
-                hasPlayerWon = aiCount == 0;
+                hasPlayerWon = rightPlayerPiecesLeft == 0;
 
                 return true;
             }
