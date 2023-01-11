@@ -10,3 +10,9 @@ This is a 2 Player Chess-like game where you take turn and battle,
  - Custom Editor for Creating Piece Movement and Attack Pattern
  - Root Animations
  - Grid Pattern showing available Cells
+
+## **DISCLAIMER:**
+Features added after sending the task (Last 3 commits)
+- Gameplay UI
+- Change Camera Angle
+- Attack Pattern Missing Reference
